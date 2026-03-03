@@ -642,7 +642,7 @@
     </div>
 
     <script>
-        // Cấu hình
+        // ==================== CẤU HÌNH ====================
         const CONFIG = {
             API_URL: 'https://ai-english-tutor.lenguyenngocthieu55.workers.dev', // Sửa sau khi có worker
         };
@@ -1056,7 +1056,7 @@
                     </div>
                     <div class="chat-messages" id="chatMessages"></div>
                     <div class="chat-input-container">
-                        <input type="text" id="messageInput" placeholder="Nhập câu hỏi của bạn...">
+                        <input type="text" id="messageInput" placeholder="Nhập câu hỏi của bạn..." onkeypress="if(event.key==='Enter') sendMessage()">
                         <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
                     </div>
                 </div>
@@ -1165,38 +1165,64 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
+        // ==================== SỬA FUNCTION NÀY ====================
         async function sendMessage() {
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
             if(!message) return;
             
+            // Thêm message của user
             addMessage('user', message);
             input.value = '';
             
+            // Thêm loading
             addMessage('bot', '<div class="loading"></div>');
             
-            // Thêm context về người học
-            const context = `Người dùng: ${userData.name}, Lớp: ${userData.grade}, Đã học: ${userData.exercisesDone} bài, Điểm TB: ${userData.averageScore}%, Điểm yếu: ${userData.weaknesses.join(', ')}`;
-            
-            const result = await callAPI('/api/chat', { 
-                message: `[${context}] ${message}`,
-                history: chatMessages.slice(-5)
-            });
-            
-            document.querySelector('#chatMessages .message:last-child').remove();
-            
-            if(result.error) {
-                addMessage('bot', 'Xin lỗi, có lỗi xảy ra');
-            } else {
-                addMessage('bot', result.response);
-                chatMessages.push(
-                    { role: 'user', content: message },
-                    { role: 'assistant', content: result.response }
-                );
+            try {
+                // Context về người học
+                const context = `Người dùng: ${userData.name}, Lớp: ${userData.grade}, Đã học: ${userData.exercisesDone} bài, Điểm TB: ${userData.averageScore}%, Điểm yếu: ${userData.weaknesses.join(', ')}`;
+                
+                // Gọi API
+                const response = await fetch(CONFIG.API_URL + '/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        message: `[${context}] ${message}`,
+                        history: chatMessages.slice(-5)
+                    })
+                });
+                
+                // Xóa loading
+                const loadingMsg = document.querySelector('#chatMessages .message:last-child');
+                if(loadingMsg) loadingMsg.remove();
+                
+                if(!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if(result.error) {
+                    addMessage('bot', '❌ Lỗi: ' + result.error);
+                } else {
+                    addMessage('bot', result.response || 'Không có phản hồi');
+                    // Lưu vào lịch sử
+                    chatMessages.push(
+                        { role: 'user', content: message },
+                        { role: 'assistant', content: result.response }
+                    );
+                }
+            } catch(e) {
+                // Xóa loading nếu có
+                const loadingMsg = document.querySelector('#chatMessages .message:last-child');
+                if(loadingMsg) loadingMsg.remove();
+                
+                addMessage('bot', '❌ Không thể kết nối đến server. Vui lòng thử lại sau.');
+                console.error('Chat error:', e);
             }
         }
 
-        // ==================== API ====================
+        // ==================== SỬA FUNCTION NÀY ====================
         async function callAPI(endpoint, data) {
             try {
                 const response = await fetch(CONFIG.API_URL + endpoint, {
@@ -1205,14 +1231,34 @@
                     body: JSON.stringify(data)
                 });
                 
+                // Đọc response dù có ok hay không
+                const result = await response.json();
+                
                 if(!response.ok) {
-                    throw new Error('API error');
+                    // Trả về lỗi từ server nếu có
+                    return { error: result.error || result.details || 'Lỗi từ server' };
                 }
                 
-                return await response.json();
+                return result;
             } catch(e) {
                 console.error('API Error:', e);
-                return { error: e.message };
+                return { error: 'Không thể kết nối đến server. Kiểm tra API_URL: ' + CONFIG.API_URL };
+            }
+        }
+
+        // ==================== KIỂM TRA KẾT NỐI ====================
+        async function testAPIConnection() {
+            try {
+                const response = await fetch(CONFIG.API_URL + '/api/health');
+                if(response.ok) {
+                    const data = await response.json();
+                    console.log('✅ Kết nối API thành công:', data);
+                } else {
+                    console.warn('⚠️ API health check failed:', response.status);
+                }
+            } catch(e) {
+                console.error('❌ Không thể kết nối API:', e);
+                alert('⚠️ Không thể kết nối đến server. Vui lòng kiểm tra API_URL trong code!');
             }
         }
 
@@ -1245,8 +1291,8 @@
             
             try {
                 let questions = [];
-                if (data.questions) {
-                    questions = data.questions;
+                if (data.exercises) {
+                    questions = data.exercises;
                 } else if (Array.isArray(data)) {
                     questions = data;
                 } else {
@@ -1385,6 +1431,9 @@
         // ==================== KHỞI TẠO ỨNG DỤNG ====================
         loadUserData();
         loadPage('dashboard');
+        
+        // Kiểm tra kết nối API
+        testAPIConnection();
     </script>
 </body>
 </html>
