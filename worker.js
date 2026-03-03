@@ -12,23 +12,70 @@ export default {
 
     const url = new URL(request.url);
 
+    // =========================
+    // HELPER: Call Gemini
+    // =========================
+    async function callGemini(prompt) {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${env.GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: prompt }],
+              },
+            ],
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(JSON.stringify(data));
+      }
+
+      let text =
+        data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+      // 🔥 XỬ LÝ JSON BỊ BỌC ```json
+      text = text
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
+
+      return text;
+    }
+
     try {
       // =========================
-      // HEALTH CHECK
+      // HEALTH
       // =========================
       if (url.pathname === "/api/health") {
         return new Response(
           JSON.stringify({
             status: "healthy",
+            model: "gemini-2.5-flash-lite",
             time: Date.now(),
-            message: "Worker is running",
           }),
           { headers: { "Content-Type": "application/json", ...headers } }
         );
       }
 
+      if (!env.GEMINI_API_KEY) {
+        return new Response(
+          JSON.stringify({ error: "GEMINI_API_KEY is missing" }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...headers },
+          }
+        );
+      }
+
       // =========================
-      // CHAT API
+      // CHAT
       // =========================
       if (url.pathname === "/api/chat") {
         if (request.method !== "POST") {
@@ -41,28 +88,7 @@ export default {
           );
         }
 
-        if (!env.GEMINI_API_KEY) {
-          return new Response(
-            JSON.stringify({ error: "GEMINI_API_KEY is missing" }),
-            {
-              status: 500,
-              headers: { "Content-Type": "application/json", ...headers },
-            }
-          );
-        }
-
-        let body;
-        try {
-          body = await request.json();
-        } catch {
-          return new Response(
-            JSON.stringify({ error: "Invalid JSON body" }),
-            {
-              status: 400,
-              headers: { "Content-Type": "application/json", ...headers },
-            }
-          );
-        }
+        const body = await request.json();
 
         if (!body.message) {
           return new Response(
@@ -74,45 +100,16 @@ export default {
           );
         }
 
-        const geminiResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${env.GEMINI_API_KEY}`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    {
-                      text: `Bạn là gia sư tiếng Anh cấp 3. Hãy trả lời bằng tiếng Việt, giải thích dễ hiểu: ${body.message}`,
-                    },
-                  ],
-                },
-              ],
-            }),
-          }
-        );
+        const prompt = `
+Bạn là gia sư tiếng Anh cấp 3.
+Giải thích bằng tiếng Việt dễ hiểu.
+Trả lời rõ ràng, có ví dụ nếu cần.
 
-        const geminiData = await geminiResponse.json();
+Câu hỏi:
+${body.message}
+`;
 
-        if (!geminiResponse.ok) {
-          return new Response(
-            JSON.stringify({
-              error: "Gemini API error",
-              details: geminiData,
-            }),
-            {
-              status: 500,
-              headers: { "Content-Type": "application/json", ...headers },
-            }
-          );
-        }
-
-        const reply =
-          geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ||
-          "Xin lỗi, không nhận được phản hồi từ AI.";
+        const reply = await callGemini(prompt);
 
         return new Response(
           JSON.stringify({ response: reply }),
@@ -124,29 +121,7 @@ export default {
       // GENERATE EXERCISE
       // =========================
       if (url.pathname === "/api/generate-exercise") {
-        if (!env.GEMINI_API_KEY) {
-          return new Response(
-            JSON.stringify({ error: "GEMINI_API_KEY is missing" }),
-            {
-              status: 500,
-              headers: { "Content-Type": "application/json", ...headers },
-            }
-          );
-        }
-
-        let body;
-        try {
-          body = await request.json();
-        } catch {
-          return new Response(
-            JSON.stringify({ error: "Invalid JSON" }),
-            {
-              status: 400,
-              headers: { "Content-Type": "application/json", ...headers },
-            }
-          );
-        }
-
+        const body = await request.json();
         const { topic, count = 5 } = body;
 
         if (!topic) {
@@ -159,44 +134,55 @@ export default {
           );
         }
 
-        const prompt = `Tạo ${count} câu hỏi trắc nghiệm tiếng Anh về chủ đề "${topic}".
-Mỗi câu có 4 đáp án A, B, C, D.
-Trả về đúng JSON array, không thêm giải thích.`;
+        const prompt = `
+Tạo ${count} câu hỏi trắc nghiệm tiếng Anh về "${topic}".
 
-        const geminiResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${env.GEMINI_API_KEY}`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [{ text: prompt }],
-                },
-              ],
-            }),
-          }
-        );
+Yêu cầu:
+- Mỗi câu gồm:
+{
+  "question": "...",
+  "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+  "correct": "A",
+  "explanation": "..."
+}
 
-        const geminiData = await geminiResponse.json();
+Trả về đúng JSON array.
+Không thêm markdown.
+Không thêm giải thích ngoài JSON.
+`;
 
-        if (!geminiResponse.ok) {
-          return new Response(
-            JSON.stringify({
-              error: "Gemini API error",
-              details: geminiData,
-            }),
-            {
-              status: 500,
-              headers: { "Content-Type": "application/json", ...headers },
-            }
-          );
-        }
+        const reply = await callGemini(prompt);
 
-        const reply =
-          geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+        return new Response(reply, {
+          headers: { "Content-Type": "application/json", ...headers },
+        });
+      }
+
+      // =========================
+      // GENERATE EXAM (THÊM MỚI - FIX LỖI 404)
+      // =========================
+      if (url.pathname === "/api/generate-exam") {
+        const body = await request.json();
+        const { type, grade } = body;
+
+        const prompt = `
+Tạo đề thi tiếng Anh cho ${grade}.
+Loại đề: ${type}.
+
+Trả về JSON array câu hỏi giống format:
+
+{
+  "question": "...",
+  "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+  "correct": "A",
+  "explanation": "..."
+}
+
+Không thêm markdown.
+Không thêm chữ ngoài JSON.
+`;
+
+        const reply = await callGemini(prompt);
 
         return new Response(reply, {
           headers: { "Content-Type": "application/json", ...headers },
@@ -213,7 +199,8 @@ Trả về đúng JSON array, không thêm giải thích.`;
     } catch (error) {
       return new Response(
         JSON.stringify({
-          error: error.message,
+          error: "Server error",
+          details: error.message,
         }),
         {
           status: 500,
