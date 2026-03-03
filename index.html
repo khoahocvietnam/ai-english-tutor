@@ -1,160 +1,1390 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-    <title>AI English Tutor</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI English Tutor Pro - Học tiếng Anh thông minh</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial; background: #667eea; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
-        button { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
-        input, select { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
-        .chat-box { height: 400px; border: 1px solid #ddd; padding: 10px; overflow-y: auto; margin: 10px 0; background: #f9f9f9; }
-        .nav { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .nav button { flex: 1; min-width: 120px; }
-        .hidden { display: none; }
-        .result-box { background: #f0f0f0; padding: 10px; border-radius: 5px; margin-top: 10px; white-space: pre-wrap; }
-        h1 { color: #667eea; text-align: center; margin-bottom: 20px; }
-        .message { margin: 10px 0; }
-        .user-message { color: blue; }
-        .ai-message { color: green; }
+        /* Giữ nguyên CSS như cũ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo i {
+            font-size: 2rem;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-menu li a {
+            text-decoration: none;
+            color: #666;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-menu li a i {
+            font-size: 1.1rem;
+        }
+
+        .nav-menu li a:hover,
+        .nav-menu li a.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        #main-content {
+            max-width: 1400px;
+            margin: 100px auto 2rem;
+            padding: 2rem;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .stat-info h3 {
+            font-size: 0.9rem;
+            color: #999;
+            font-weight: 500;
+        }
+
+        .stat-info .stat-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .welcome-section {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        }
+
+        .welcome-section h1 {
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .welcome-section p {
+            color: #666;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            color: white;
+            font-size: 2.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .feature-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .exercise-generator {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group select,
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+        }
+
+        .questions-container {
+            margin-top: 2rem;
+        }
+
+        .question-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #667eea;
+        }
+
+        .question-text {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .options {
+            display: grid;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .option:hover {
+            background: #e3f2fd;
+        }
+
+        .option input[type="radio"] {
+            width: auto;
+            margin-right: 0.5rem;
+        }
+
+        .explanation {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #e3f2fd;
+            border-radius: 8px;
+            color: #1976d2;
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .chat-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            background: #f8f9fa;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 1rem;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 1rem;
+            border-radius: 15px;
+            position: relative;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .message-time {
+            font-size: 0.7rem;
+            margin-top: 0.2rem;
+            opacity: 0.7;
+        }
+
+        .chat-input-container {
+            padding: 1rem;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .chat-input-container input {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+
+        .chat-input-container button {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .chat-input-container button:hover {
+            transform: scale(1.1);
+        }
+
+        .learning-path {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        .path-timeline {
+            position: relative;
+            padding: 2rem 0;
+        }
+
+        .path-timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .path-item {
+            position: relative;
+            padding-left: 60px;
+            margin-bottom: 2rem;
+        }
+
+        .path-marker {
+            position: absolute;
+            left: 10px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid #667eea;
+            z-index: 1;
+        }
+
+        .path-item.completed .path-marker {
+            background: #667eea;
+        }
+
+        .path-content {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .path-content h4 {
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .path-content p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .weakness-tag {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            background: #ffebee;
+            color: #c62828;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin: 0.2rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .history-item {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 0.5rem;
+            border-left: 3px solid #667eea;
+        }
+
+        .score-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 15px;
+            background: #4caf50;
+            color: white;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+            }
+            
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            #main-content {
+                margin: 80px 1rem 1rem;
+                padding: 1rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🤖 AI English Tutor</h1>
-        
-        <div class="nav">
-            <button onclick="showPage('home')">🏠 Trang chủ</button>
-            <button onclick="showPage('exercises')">📝 Bài tập</button>
-            <button onclick="showPage('exams')">📋 Đề thi</button>
-            <button onclick="showPage('chat')">💬 Chat AI</button>
-        </div>
-
-        <!-- Trang chủ -->
-        <div id="homePage">
-            <h2>Chào mừng bạn!</h2>
-            <p>Học tiếng Anh thông minh với trí tuệ nhân tạo</p>
-            <p>Chọn chức năng ở trên để bắt đầu:</p>
-            <ul>
-                <li>📝 Tạo bài tập theo chủ đề</li>
-                <li>📋 Luyện đề thi các loại</li>
-                <li>💬 Hỏi đáp với AI 24/7</li>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <i class="fas fa-robot"></i>
+                <span>AI English Tutor Pro</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a class="active" onclick="loadPage('dashboard')"><i class="fas fa-home"></i> Dashboard</a></li>
+                <li><a onclick="loadPage('exercises')"><i class="fas fa-pencil-alt"></i> Bài tập</a></li>
+                <li><a onclick="loadPage('exams')"><i class="fas fa-file-alt"></i> Đề thi</a></li>
+                <li><a onclick="loadPage('pronunciation')"><i class="fas fa-microphone"></i> Phát âm</a></li>
+                <li><a onclick="loadPage('chat')"><i class="fas fa-comment-dots"></i> Chat AI</a></li>
+                <li><a onclick="loadPage('progress')"><i class="fas fa-chart-line"></i> Tiến độ</a></li>
             </ul>
+            <div class="user-profile" onclick="showProfile()">
+                <div class="avatar" id="userAvatar">H</div>
+            </div>
         </div>
+    </nav>
 
-        <!-- Trang bài tập -->
-        <div id="exercisesPage" class="hidden">
-            <h2>📝 Tạo bài tập</h2>
-            <select id="topic">
-                <option value="Thì hiện tại đơn">Thì hiện tại đơn</option>
-                <option value="Thì quá khứ đơn">Thì quá khứ đơn</option>
-                <option value="Thì tương lai">Thì tương lai</option>
-                <option value="Câu điều kiện">Câu điều kiện</option>
-                <option value="Từ vựng cơ bản">Từ vựng cơ bản</option>
-            </select>
-            <button onclick="createExercise()">Tạo bài tập</button>
-            <div id="exerciseResult" class="result-box"></div>
-        </div>
+    <main id="main-content"></main>
 
-        <!-- Trang đề thi -->
-        <div id="examsPage" class="hidden">
-            <h2>📋 Tạo đề thi</h2>
-            <select id="examType">
-                <option value="15 phút">Kiểm tra 15 phút</option>
-                <option value="giữa kỳ">Giữa kỳ</option>
-                <option value="cuối kỳ">Cuối kỳ</option>
-                <option value="học sinh giỏi">Học sinh giỏi</option>
-                <option value="tốt nghiệp">Tốt nghiệp</option>
-            </select>
-            <button onclick="createExam()">Tạo đề thi</button>
-            <div id="examResult" class="result-box"></div>
-        </div>
-
-        <!-- Trang chat -->
-        <div id="chatPage" class="hidden">
-            <h2>💬 Chat với AI Tutor</h2>
-            <div class="chat-box" id="chatBox"></div>
-            <input type="text" id="message" placeholder="Nhập câu hỏi tiếng Anh của bạn...">
-            <button onclick="sendMessage()">Gửi</button>
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Hồ sơ cá nhân</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="profile-info">
+                <p><strong>Tên:</strong> <input type="text" id="userName" value="Học sinh" onchange="updateProfile()"></p>
+                <p><strong>Lớp:</strong> 
+                    <select id="userGrade" onchange="updateProfile()">
+                        <option value="Lớp 10">Lớp 10</option>
+                        <option value="Lớp 11">Lớp 11</option>
+                        <option value="Lớp 12">Lớp 12</option>
+                    </select>
+                </p>
+                <p><strong>Bài đã làm:</strong> <span id="totalExercises">0</span></p>
+                <p><strong>Điểm trung bình:</strong> <span id="avgScore">0</span>%</p>
+                <p><strong>Thời gian học:</strong> <span id="totalTime">0</span> phút</p>
+                <p><strong>Điểm mạnh:</strong> <span id="strengths">Chưa có dữ liệu</span></p>
+                <p><strong>Điểm yếu cần cải thiện:</strong> <span id="weaknesses">Chưa có dữ liệu</span></p>
+            </div>
         </div>
     </div>
 
     <script>
-        // 👉 QUAN TRỌNG: Sửa URL này thành URL worker của bạn
-        const API_URL = 'https://cold-truth-cadf.lenguyenngocthieu55.workers.dev';
-        
-        let messages = [];
+        // Cấu hình
+        const CONFIG = {
+            API_URL: 'https://ai-english-tutor.your-subdomain.workers.dev', // Sửa sau khi có worker
+        };
 
-        function showPage(page) {
-            document.getElementById('homePage').classList.add('hidden');
-            document.getElementById('exercisesPage').classList.add('hidden');
-            document.getElementById('examsPage').classList.add('hidden');
-            document.getElementById('chatPage').classList.add('hidden');
+        // Danh sách chủ đề
+        const topics = [
+            { id: 1, name: 'Thì hiện tại đơn', level: 'Cơ bản', category: 'grammar' },
+            { id: 2, name: 'Thì hiện tại tiếp diễn', level: 'Cơ bản', category: 'grammar' },
+            { id: 3, name: 'Thì quá khứ đơn', level: 'Cơ bản', category: 'grammar' },
+            { id: 4, name: 'Thì tương lai', level: 'Trung cấp', category: 'grammar' },
+            { id: 5, name: 'Câu điều kiện', level: 'Trung cấp', category: 'grammar' },
+            { id: 6, name: 'Câu bị động', level: 'Trung cấp', category: 'grammar' },
+            { id: 7, name: 'Mệnh đề quan hệ', level: 'Nâng cao', category: 'grammar' },
+            { id: 8, name: 'Từ vựng chủ đề trường học', level: 'Cơ bản', category: 'vocabulary' },
+            { id: 9, name: 'Từ vựng chủ đề gia đình', level: 'Cơ bản', category: 'vocabulary' },
+            { id: 10, name: 'Từ vựng chủ đề du lịch', level: 'Trung cấp', category: 'vocabulary' }
+        ];
+
+        const examTypes = [
+            { id: '15min', name: 'Kiểm tra 15 phút', time: 15, questions: 10 },
+            { id: 'midterm', name: 'Giữa kỳ', time: 45, questions: 30 },
+            { id: 'final', name: 'Cuối kỳ', time: 60, questions: 40 },
+            { id: 'gifted', name: 'Học sinh giỏi', time: 90, questions: 50 },
+            { id: 'graduation', name: 'Tốt nghiệp', time: 120, questions: 60 }
+        ];
+
+        // ==================== DỮ LIỆU NGƯỜI HỌC ====================
+        let userData = {
+            name: 'Học sinh',
+            grade: 'Lớp 10',
+            exercisesDone: 0,
+            averageScore: 0,
+            totalTime: 0,
+            history: [],           // Lịch sử làm bài
+            mistakes: [],          // Các lỗi sai
+            strengths: [],         // Điểm mạnh
+            weaknesses: [],        // Điểm yếu
+            learningPath: [],      // Lộ trình học tập
+            lastActive: null
+        };
+
+        // Load dữ liệu từ LocalStorage khi bắt đầu
+        function loadUserData() {
+            const saved = localStorage.getItem('ai_english_tutor_data');
+            if (saved) {
+                try {
+                    userData = JSON.parse(saved);
+                    updateAvatar();
+                } catch (e) {
+                    console.error('Error loading data:', e);
+                }
+            }
+        }
+
+        // Lưu dữ liệu vào LocalStorage
+        function saveUserData() {
+            localStorage.setItem('ai_english_tutor_data', JSON.stringify(userData));
+        }
+
+        // Cập nhật avatar
+        function updateAvatar() {
+            const avatar = document.getElementById('userAvatar');
+            if (avatar) {
+                avatar.textContent = userData.name.charAt(0).toUpperCase();
+            }
+        }
+
+        // ==================== LƯU KẾT QUẢ BÀI TẬP ====================
+        function saveExerciseResult(topic, questions, answers, score) {
+            const result = {
+                id: Date.now(),
+                type: 'exercise',
+                topic: topic,
+                timestamp: new Date().toISOString(),
+                questions: questions,
+                answers: answers,
+                score: score,
+                timeSpent: 0 // Sẽ cập nhật sau
+            };
+
+            userData.history.push(result);
+            userData.exercisesDone++;
             
-            if(page === 'home') document.getElementById('homePage').classList.remove('hidden');
-            if(page === 'exercises') document.getElementById('exercisesPage').classList.remove('hidden');
-            if(page === 'exams') document.getElementById('examsPage').classList.remove('hidden');
-            if(page === 'chat') document.getElementById('chatPage').classList.remove('hidden');
+            // Cập nhật điểm trung bình
+            const totalScore = userData.history.reduce((sum, item) => sum + (item.score || 0), 0);
+            userData.averageScore = Math.round(totalScore / userData.history.length);
+
+            // Phân tích lỗi sai
+            analyzeMistakesFromResult(result);
+
+            // Cập nhật thời gian
+            userData.totalTime += 15; // Mỗi bài tập ước tính 15 phút
+            userData.lastActive = new Date().toISOString();
+
+            saveUserData();
         }
 
-        async function callAPI(endpoint, data) {
-            try {
-                const response = await fetch(API_URL + endpoint, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(data)
+        // Phân tích lỗi sai từ kết quả
+        function analyzeMistakesFromResult(result) {
+            if (!result.questions || !result.answers) return;
+
+            const mistakes = [];
+            
+            result.questions.forEach((q, index) => {
+                const userAnswer = result.answers[index];
+                if (userAnswer && userAnswer !== q.correct) {
+                    mistakes.push({
+                        question: q.question,
+                        topic: result.topic,
+                        correct: q.correct,
+                        userAnswer: userAnswer,
+                        explanation: q.explanation
+                    });
+                }
+            });
+
+            if (mistakes.length > 0) {
+                userData.mistakes.push(...mistakes);
+                
+                // Cập nhật điểm yếu
+                const weakTopics = {};
+                mistakes.forEach(m => {
+                    weakTopics[m.topic] = (weakTopics[m.topic] || 0) + 1;
                 });
-                return await response.json();
-            } catch(e) {
-                return {error: e.message};
+
+                userData.weaknesses = Object.entries(weakTopics)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 3)
+                    .map(item => item[0]);
+
+                // Tạo lộ trình học tập dựa trên điểm yếu
+                generateLearningPathFromWeaknesses();
             }
         }
 
-        async function createExercise() {
-            const topic = document.getElementById('topic').value;
-            document.getElementById('exerciseResult').innerHTML = 'Đang tạo bài tập...';
-            const result = await callAPI('/api/generate-exercise', {topic});
-            if(result.error) {
-                document.getElementById('exerciseResult').innerHTML = 'Lỗi: ' + result.error;
-            } else {
-                document.getElementById('exerciseResult').innerHTML = result.response;
+        // Tạo lộ trình học tập từ điểm yếu
+        function generateLearningPathFromWeaknesses() {
+            const path = [];
+            const weakTopics = userData.weaknesses;
+
+            weakTopics.forEach((topic, index) => {
+                path.push({
+                    id: index + 1,
+                    topic: topic,
+                    status: 'pending',
+                    exercises: [
+                        { name: `Bài tập cơ bản về ${topic}`, completed: false },
+                        { name: `Bài tập nâng cao về ${topic}`, completed: false },
+                        { name: `Kiểm tra ${topic}`, completed: false }
+                    ]
+                });
+            });
+
+            // Thêm các bài học cơ bản
+            const basicTopics = ['Thì hiện tại đơn', 'Thì quá khứ đơn'];
+            basicTopics.forEach((topic, index) => {
+                if (!weakTopics.includes(topic)) {
+                    path.push({
+                        id: weakTopics.length + index + 1,
+                        topic: topic,
+                        status: 'pending',
+                        exercises: [
+                            { name: `Bài tập cơ bản về ${topic}`, completed: false }
+                        ]
+                    });
+                }
+            });
+
+            userData.learningPath = path;
+        }
+
+        // Lấy đề xuất bài học dựa trên điểm yếu
+        function getRecommendedLessons() {
+            const recommendations = [];
+            const weakTopics = userData.weaknesses.slice(0, 3);
+
+            weakTopics.forEach(topic => {
+                recommendations.push({
+                    topic: topic,
+                    reason: 'Bạn còn yếu phần này',
+                    difficulty: 'Dễ',
+                    estimatedTime: '15 phút'
+                });
+            });
+
+            // Thêm bài học tiếp theo từ lộ trình
+            const nextLesson = userData.learningPath.find(item => item.status === 'pending');
+            if (nextLesson && !weakTopics.includes(nextLesson.topic)) {
+                recommendations.push({
+                    topic: nextLesson.topic,
+                    reason: 'Bài học tiếp theo trong lộ trình',
+                    difficulty: 'Trung bình',
+                    estimatedTime: '20 phút'
+                });
+            }
+
+            return recommendations;
+        }
+
+        // ==================== GIAO DIỆN ====================
+        function loadPage(page) {
+            const content = document.getElementById('main-content');
+            
+            document.querySelectorAll('.nav-menu a').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            const activeLink = Array.from(document.querySelectorAll('.nav-menu a')).find(
+                link => link.textContent.includes(page === 'dashboard' ? 'Dashboard' : 
+                    page === 'exercises' ? 'Bài tập' :
+                    page === 'exams' ? 'Đề thi' :
+                    page === 'pronunciation' ? 'Phát âm' :
+                    page === 'chat' ? 'Chat' : 'Tiến độ')
+            );
+            if (activeLink) activeLink.classList.add('active');
+            
+            switch(page) {
+                case 'dashboard':
+                    content.innerHTML = getDashboardPage();
+                    initDashboard();
+                    break;
+                case 'exercises':
+                    content.innerHTML = getExercisesPage();
+                    initExercises();
+                    break;
+                case 'exams':
+                    content.innerHTML = getExamsPage();
+                    initExams();
+                    break;
+                case 'pronunciation':
+                    content.innerHTML = getPronunciationPage();
+                    initPronunciation();
+                    break;
+                case 'chat':
+                    content.innerHTML = getChatPage();
+                    initChat();
+                    break;
+                case 'progress':
+                    content.innerHTML = getProgressPage();
+                    initProgress();
+                    break;
             }
         }
 
-        async function createExam() {
-            const type = document.getElementById('examType').value;
-            document.getElementById('examResult').innerHTML = 'Đang tạo đề thi...';
-            const result = await callAPI('/api/generate-exam', {type});
-            if(result.error) {
-                document.getElementById('examResult').innerHTML = 'Lỗi: ' + result.error;
-            } else {
-                document.getElementById('examResult').innerHTML = result.response;
-            }
+        // Dashboard Page
+        function getDashboardPage() {
+            const recommendations = getRecommendedLessons();
+            
+            return `
+                <div class="dashboard">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-book-open"></i></div>
+                        <div class="stat-info">
+                            <h3>Bài đã học</h3>
+                            <div class="stat-number">${userData.exercisesDone}</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-star"></i></div>
+                        <div class="stat-info">
+                            <h3>Điểm TB</h3>
+                            <div class="stat-number">${userData.averageScore}%</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                        <div class="stat-info">
+                            <h3>Thời gian</h3>
+                            <div class="stat-number">${Math.round(userData.totalTime / 60)}h</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-trophy"></i></div>
+                        <div class="stat-info">
+                            <h3>Thành tích</h3>
+                            <div class="stat-number">${userData.exercisesDone > 0 ? 'Đang học' : 'Bắt đầu'}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="welcome-section">
+                    <h1>Xin chào, ${userData.name}! 👋</h1>
+                    <p>Hôm nay bạn muốn học gì? Dựa trên lịch sử học tập, tôi thấy bạn cần cải thiện:</p>
+                    <div>
+                        ${userData.weaknesses.map(w => `<span class="weakness-tag">${w}</span>`).join('') || 'Chưa có dữ liệu'}
+                    </div>
+                </div>
+
+                <div class="features-grid">
+                    <div class="feature-card" onclick="loadPage('exercises')">
+                        <div class="feature-icon"><i class="fas fa-pencil-alt"></i></div>
+                        <h3>Bài tập thông minh</h3>
+                        <p>Luyện tập ngay các chủ đề bạn còn yếu</p>
+                    </div>
+                    <div class="feature-card" onclick="loadPage('exams')">
+                        <div class="feature-icon"><i class="fas fa-file-alt"></i></div>
+                        <h3>Kho đề thi</h3>
+                        <p>Kiểm tra năng lực với các đề thi đa dạng</p>
+                    </div>
+                    <div class="feature-card" onclick="loadPage('progress')">
+                        <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                        <h3>Theo dõi tiến độ</h3>
+                        <p>Xem sự tiến bộ và phân tích lỗi sai</p>
+                    </div>
+                </div>
+
+                <div class="learning-path">
+                    <h2>Đề xuất cho bạn hôm nay 📚</h2>
+                    <div class="path-timeline">
+                        ${recommendations.map((rec, index) => `
+                            <div class="path-item ${index === 0 ? 'completed' : ''}">
+                                <div class="path-marker"></div>
+                                <div class="path-content">
+                                    <h4>${rec.topic}</h4>
+                                    <p>${rec.reason} • ${rec.difficulty} • ${rec.estimatedTime}</p>
+                                    <button class="btn-primary" style="margin-top: 0.5rem; padding: 0.5rem;" onclick="loadPage('exercises')">
+                                        Học ngay
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Exercises Page
+        function getExercisesPage() {
+            return `
+                <div class="exercise-generator">
+                    <h2>Tạo bài tập thông minh 📝</h2>
+                    <div class="form-group">
+                        <label>Chọn chủ đề:</label>
+                        <select id="exerciseTopic">
+                            ${topics.map(t => `<option value="${t.name}" ${userData.weaknesses.includes(t.name) ? 'selected' : ''}>${t.name} (${t.level})</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Số lượng câu hỏi:</label>
+                        <select id="questionCount">
+                            <option value="5">5 câu</option>
+                            <option value="10" selected>10 câu</option>
+                            <option value="15">15 câu</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Độ khó:</label>
+                        <select id="difficulty">
+                            <option value="easy">Dễ</option>
+                            <option value="medium" selected>Trung bình</option>
+                            <option value="hard">Khó</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" onclick="generateExercise()">
+                        <i class="fas fa-magic"></i> Tạo bài tập
+                    </button>
+                    <div id="exerciseResult" class="questions-container"></div>
+                </div>
+            `;
+        }
+
+        // Exams Page
+        function getExamsPage() {
+            return `
+                <div class="exercise-generator">
+                    <h2>Tạo đề thi 📋</h2>
+                    <div class="form-group">
+                        <label>Loại đề:</label>
+                        <select id="examType">
+                            ${examTypes.map(t => `<option value="${t.id}">${t.name} (${t.time} phút - ${t.questions} câu)</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Lớp:</label>
+                        <select id="examGrade">
+                            <option value="Lớp 10" ${userData.grade === 'Lớp 10' ? 'selected' : ''}>Lớp 10</option>
+                            <option value="Lớp 11" ${userData.grade === 'Lớp 11' ? 'selected' : ''}>Lớp 11</option>
+                            <option value="Lớp 12" ${userData.grade === 'Lớp 12' ? 'selected' : ''}>Lớp 12</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" onclick="generateExam()">
+                        <i class="fas fa-magic"></i> Tạo đề thi
+                    </button>
+                    <div id="examResult" class="questions-container"></div>
+                </div>
+            `;
+        }
+
+        // Pronunciation Page
+        function getPronunciationPage() {
+            return `
+                <div class="exercise-generator">
+                    <h2>Luyện phát âm 🎤</h2>
+                    <p>Tính năng đang phát triển...</p>
+                </div>
+            `;
+        }
+
+        // Chat Page
+        function getChatPage() {
+            return `
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <div class="chat-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div>
+                            <h3>AI Tutor</h3>
+                            <p style="font-size: 0.9rem; opacity: 0.8;">Tôi đã nhớ lịch sử học của bạn</p>
+                        </div>
+                    </div>
+                    <div class="chat-messages" id="chatMessages"></div>
+                    <div class="chat-input-container">
+                        <input type="text" id="messageInput" placeholder="Nhập câu hỏi của bạn...">
+                        <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Progress Page
+        function getProgressPage() {
+            const recentHistory = userData.history.slice(-10).reverse();
+            
+            return `
+                <div class="exercise-generator">
+                    <h2>Tiến độ học tập 📊</h2>
+                    
+                    <h3>Thống kê tổng quan</h3>
+                    <div style="display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin: 1rem 0;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; color: #667eea;">${userData.exercisesDone}</div>
+                            <div>Bài đã làm</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; color: #667eea;">${userData.averageScore}%</div>
+                            <div>Điểm TB</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; color: #667eea;">${userData.mistakes.length}</div>
+                            <div>Lỗi đã mắc</div>
+                        </div>
+                    </div>
+
+                    <h3>Điểm mạnh</h3>
+                    <div style="margin: 1rem 0;">
+                        ${userData.strengths.map(s => `<span class="weakness-tag" style="background: #e8f5e8; color: #2e7d32;">${s}</span>`).join('') || 'Chưa có dữ liệu'}
+                    </div>
+
+                    <h3>Điểm yếu cần cải thiện</h3>
+                    <div style="margin: 1rem 0;">
+                        ${userData.weaknesses.map(w => `<span class="weakness-tag">${w}</span>`).join('') || 'Chưa có dữ liệu'}
+                    </div>
+
+                    <h3>Lộ trình học tập đề xuất</h3>
+                    <div class="path-timeline" style="margin: 1rem 0;">
+                        ${userData.learningPath.map((item, index) => `
+                            <div class="path-item ${item.status === 'completed' ? 'completed' : ''}">
+                                <div class="path-marker"></div>
+                                <div class="path-content">
+                                    <h4>${item.topic}</h4>
+                                    <p>${item.exercises.map(e => e.completed ? '✅' : '⭕').join(' ')}</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <h3>Lịch sử học tập gần đây</h3>
+                    <div style="margin: 1rem 0;">
+                        ${recentHistory.map(item => `
+                            <div class="history-item">
+                                <div><strong>${item.topic}</strong> <span class="score-badge">${item.score}%</span></div>
+                                <div style="font-size: 0.8rem; color: #666;">${new Date(item.timestamp).toLocaleString('vi-VN')}</div>
+                            </div>
+                        `).join('') || 'Chưa có lịch sử học tập'}
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==================== KHỞI TẠO ====================
+        function initDashboard() {
+            // Không cần làm gì thêm
+        }
+
+        function initExercises() {
+            // Không cần làm gì thêm
+        }
+
+        function initExams() {
+            // Không cần làm gì thêm
+        }
+
+        function initPronunciation() {
+            // Không cần làm gì thêm
+        }
+
+        let chatMessages = [];
+
+        function initChat() {
+            chatMessages = [];
+            const welcomeMsg = `Xin chào ${userData.name}! Tôi thấy bạn đã học ${userData.exercisesDone} bài, điểm trung bình ${userData.averageScore}%. Bạn cần giúp gì hôm nay?`;
+            addMessage('bot', welcomeMsg);
+        }
+
+        function addMessage(role, content) {
+            const messagesDiv = document.getElementById('chatMessages');
+            if(!messagesDiv) return;
+            
+            const time = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    ${content}
+                    <div class="message-time">${time}</div>
+                </div>
+            `;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
         async function sendMessage() {
-            const msg = document.getElementById('message').value;
-            if(!msg) return;
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if(!message) return;
             
-            const chatBox = document.getElementById('chatBox');
-            chatBox.innerHTML += `<div class="message user-message"><b>Bạn:</b> ${msg}</div>`;
-            document.getElementById('message').value = '';
+            addMessage('user', message);
+            input.value = '';
             
-            const result = await callAPI('/api/chat', {message: msg, history: messages});
+            addMessage('bot', '<div class="loading"></div>');
+            
+            // Thêm context về người học
+            const context = `Người dùng: ${userData.name}, Lớp: ${userData.grade}, Đã học: ${userData.exercisesDone} bài, Điểm TB: ${userData.averageScore}%, Điểm yếu: ${userData.weaknesses.join(', ')}`;
+            
+            const result = await callAPI('/api/chat', { 
+                message: `[${context}] ${message}`,
+                history: chatMessages.slice(-5)
+            });
+            
+            document.querySelector('#chatMessages .message:last-child').remove();
             
             if(result.error) {
-                chatBox.innerHTML += `<div class="message ai-message"><b>AI:</b> Lỗi: ${result.error}</div>`;
+                addMessage('bot', 'Xin lỗi, có lỗi xảy ra');
             } else {
-                chatBox.innerHTML += `<div class="message ai-message"><b>AI:</b> ${result.response}</div>`;
-                messages.push({role: 'user', content: msg});
-                messages.push({role: 'assistant', content: result.response});
+                addMessage('bot', result.response);
+                chatMessages.push(
+                    { role: 'user', content: message },
+                    { role: 'assistant', content: result.response }
+                );
             }
-            
-            chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        // Mở trang chủ khi bắt đầu
-        showPage('home');
+        // ==================== API ====================
+        async function callAPI(endpoint, data) {
+            try {
+                const response = await fetch(CONFIG.API_URL + endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if(!response.ok) {
+                    throw new Error('API error');
+                }
+                
+                return await response.json();
+            } catch(e) {
+                console.error('API Error:', e);
+                return { error: e.message };
+            }
+        }
+
+        // ==================== BÀI TẬP ====================
+        let currentExercise = null;
+
+        async function generateExercise() {
+            const topic = document.getElementById('exerciseTopic').value;
+            const count = document.getElementById('questionCount').value;
+            const difficulty = document.getElementById('difficulty').value;
+            const resultDiv = document.getElementById('exerciseResult');
+            
+            resultDiv.innerHTML = '<div style="text-align: center;"><div class="loading"></div> Đang tạo bài tập...</div>';
+            
+            const result = await callAPI('/api/generate-exercise', { 
+                topic, 
+                count, 
+                difficulty 
+            });
+            
+            if(result.error) {
+                resultDiv.innerHTML = `<p style="color: red;">Lỗi: ${result.error}</p>`;
+            } else {
+                displayExercise(result, topic);
+            }
+        }
+
+        function displayExercise(data, topic) {
+            const resultDiv = document.getElementById('exerciseResult');
+            
+            try {
+                let questions = [];
+                if (data.questions) {
+                    questions = data.questions;
+                } else if (Array.isArray(data)) {
+                    questions = data;
+                } else {
+                    questions = [data];
+                }
+
+                currentExercise = {
+                    topic: topic,
+                    questions: questions,
+                    answers: {}
+                };
+                
+                let html = '<h3>Bài tập của bạn:</h3>';
+                
+                questions.forEach((q, index) => {
+                    const questionText = q.question || q.text || `Câu hỏi ${index + 1}`;
+                    const options = q.options || ['A. Option 1', 'B. Option 2', 'C. Option 3', 'D. Option 4'];
+                    
+                    html += `
+                        <div class="question-card" data-question-id="${index}">
+                            <div class="question-text">Câu ${index + 1}: ${questionText}</div>
+                            <div class="options">
+                                ${options.map(opt => `
+                                    <label class="option">
+                                        <input type="radio" name="q${index}" value="${opt}" onchange="saveAnswer(${index}, '${opt}')">
+                                        ${opt}
+                                    </label>
+                                `).join('')}
+                            </div>
+                            <div class="explanation" style="display: none;" id="exp${index}">
+                                <strong>Đáp án đúng: ${q.correct || 'A'}</strong><br>
+                                ${q.explanation || 'Giải thích sẽ hiện sau khi kiểm tra'}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `<button class="btn-primary" onclick="checkExerciseAnswers()" style="margin-top: 1rem;">Kiểm tra đáp án</button>`;
+                
+                resultDiv.innerHTML = html;
+            } catch(e) {
+                resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            }
+        }
+
+        function saveAnswer(questionIndex, answer) {
+            if (!currentExercise.answers) {
+                currentExercise.answers = {};
+            }
+            currentExercise.answers[questionIndex] = answer;
+        }
+
+        function checkExerciseAnswers() {
+            if (!currentExercise || !currentExercise.questions) return;
+            
+            const questions = currentExercise.questions;
+            const answers = currentExercise.answers || {};
+            let correct = 0;
+            
+            questions.forEach((q, index) => {
+                const expDiv = document.getElementById(`exp${index}`);
+                if (expDiv) {
+                    expDiv.style.display = 'block';
+                    
+                    const userAnswer = answers[index];
+                    const correctAnswer = q.correct || 'A';
+                    
+                    // Highlight đáp án
+                    const options = document.querySelectorAll(`[name="q${index}"]`);
+                    options.forEach(opt => {
+                        const label = opt.closest('.option');
+                        if (opt.value === correctAnswer) {
+                            label.style.background = '#c8e6c9';
+                        } else if (opt.checked && opt.value !== correctAnswer) {
+                            label.style.background = '#ffcdd2';
+                        }
+                    });
+                    
+                    if (userAnswer && userAnswer.includes(correctAnswer)) {
+                        correct++;
+                    }
+                }
+            });
+            
+            const score = Math.round((correct / questions.length) * 100);
+            alert(`Bạn trả lời đúng ${correct}/${questions.length} câu! Điểm: ${score}%`);
+            
+            // Lưu kết quả
+            saveExerciseResult(currentExercise.topic, questions, answers, score);
+        }
+
+        // ==================== ĐỀ THI ====================
+        async function generateExam() {
+            const type = document.getElementById('examType').value;
+            const grade = document.getElementById('examGrade').value;
+            const resultDiv = document.getElementById('examResult');
+            
+            resultDiv.innerHTML = '<div style="text-align: center;"><div class="loading"></div> Đang tạo đề thi...</div>';
+            
+            const result = await callAPI('/api/generate-exam', { type, grade });
+            
+            if(result.error) {
+                resultDiv.innerHTML = `<p style="color: red;">Lỗi: ${result.error}</p>`;
+            } else {
+                resultDiv.innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+            }
+        }
+
+        // ==================== HỒ SƠ ====================
+        function showProfile() {
+            document.getElementById('profileModal').classList.add('active');
+            document.getElementById('userName').value = userData.name;
+            document.getElementById('userGrade').value = userData.grade;
+            document.getElementById('totalExercises').textContent = userData.exercisesDone;
+            document.getElementById('avgScore').textContent = userData.averageScore;
+            document.getElementById('totalTime').textContent = userData.totalTime;
+            document.getElementById('strengths').textContent = userData.strengths.join(', ') || 'Chưa có';
+            document.getElementById('weaknesses').textContent = userData.weaknesses.join(', ') || 'Chưa có';
+        }
+
+        function closeModal() {
+            document.getElementById('profileModal').classList.remove('active');
+        }
+
+        function updateProfile() {
+            userData.name = document.getElementById('userName').value;
+            userData.grade = document.getElementById('userGrade').value;
+            updateAvatar();
+            saveUserData();
+        }
+
+        function initProgress() {
+            // Khởi tạo biểu đồ nếu cần
+        }
+
+        // ==================== KHỞI TẠO ỨNG DỤNG ====================
+        loadUserData();
+        loadPage('dashboard');
     </script>
 </body>
 </html>
