@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI English Tutor</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial; background: #667eea; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
+        button { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        input, select { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
+        .chat-box { height: 400px; border: 1px solid #ddd; padding: 10px; overflow-y: auto; margin: 10px 0; }
+        .nav { display: flex; gap: 10px; margin-bottom: 20px; }
+        .nav button { flex: 1; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AI English Tutor</h1>
+        
+        <div class="nav">
+            <button onclick="showPage('home')">Trang chủ</button>
+            <button onclick="showPage('exercises')">Bài tập</button>
+            <button onclick="showPage('exams')">Đề thi</button>
+            <button onclick="showPage('chat')">Chat AI</button>
+        </div>
+
+        <div id="homePage">
+            <h2>Chào mừng bạn!</h2>
+            <p>Học tiếng Anh với AI</p>
+        </div>
+
+        <div id="exercisesPage" class="hidden">
+            <h2>Tạo bài tập</h2>
+            <select id="topic">
+                <option value="present simple">Thì hiện tại đơn</option>
+                <option value="past simple">Thì quá khứ đơn</option>
+            </select>
+            <button onclick="createExercise()">Tạo bài tập</button>
+            <div id="exerciseResult"></div>
+        </div>
+
+        <div id="examsPage" class="hidden">
+            <h2>Tạo đề thi</h2>
+            <select id="examType">
+                <option value="15min">15 phút</option>
+                <option value="midterm">Giữa kỳ</option>
+            </select>
+            <button onclick="createExam()">Tạo đề thi</button>
+            <div id="examResult"></div>
+        </div>
+
+        <div id="chatPage" class="hidden">
+            <h2>Chat với AI</h2>
+            <div class="chat-box" id="chatBox"></div>
+            <input type="text" id="message" placeholder="Nhập câu hỏi...">
+            <button onclick="sendMessage()">Gửi</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://ai-english-tutor.your-subdomain.workers.dev';
+        let messages = [];
+
+        function showPage(page) {
+            document.getElementById('homePage').classList.add('hidden');
+            document.getElementById('exercisesPage').classList.add('hidden');
+            document.getElementById('examsPage').classList.add('hidden');
+            document.getElementById('chatPage').classList.add('hidden');
+            
+            if(page === 'home') document.getElementById('homePage').classList.remove('hidden');
+            if(page === 'exercises') document.getElementById('exercisesPage').classList.remove('hidden');
+            if(page === 'exams') document.getElementById('examsPage').classList.remove('hidden');
+            if(page === 'chat') document.getElementById('chatPage').classList.remove('hidden');
+        }
+
+        async function callAPI(endpoint, data) {
+            try {
+                const response = await fetch(API_URL + endpoint, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                return await response.json();
+            } catch(e) {
+                return {error: e.message};
+            }
+        }
+
+        async function createExercise() {
+            const topic = document.getElementById('topic').value;
+            const result = await callAPI('/api/generate-exercise', {topic});
+            document.getElementById('exerciseResult').innerHTML = JSON.stringify(result);
+        }
+
+        async function createExam() {
+            const type = document.getElementById('examType').value;
+            const result = await callAPI('/api/generate-exam', {type});
+            document.getElementById('examResult').innerHTML = JSON.stringify(result);
+        }
+
+        async function sendMessage() {
+            const msg = document.getElementById('message').value;
+            if(!msg) return;
+            
+            const chatBox = document.getElementById('chatBox');
+            chatBox.innerHTML += `<p><b>Bạn:</b> ${msg}</p>`;
+            document.getElementById('message').value = '';
+            
+            const result = await callAPI('/api/chat', {message: msg, history: messages});
+            chatBox.innerHTML += `<p><b>AI:</b> ${result.response || 'Lỗi'}</p>`;
+            messages.push({role: 'user', content: msg});
+            messages.push({role: 'assistant', content: result.response});
+        }
+
+        showPage('home');
+    </script>
+</body>
+</html>
