@@ -6,60 +6,83 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial; background: #667eea; padding: 20px; }
         .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
-        button { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        button { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
         input, select { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
-        .chat-box { height: 400px; border: 1px solid #ddd; padding: 10px; overflow-y: auto; margin: 10px 0; }
-        .nav { display: flex; gap: 10px; margin-bottom: 20px; }
-        .nav button { flex: 1; }
+        .chat-box { height: 400px; border: 1px solid #ddd; padding: 10px; overflow-y: auto; margin: 10px 0; background: #f9f9f9; }
+        .nav { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .nav button { flex: 1; min-width: 120px; }
         .hidden { display: none; }
+        .result-box { background: #f0f0f0; padding: 10px; border-radius: 5px; margin-top: 10px; white-space: pre-wrap; }
+        h1 { color: #667eea; text-align: center; margin-bottom: 20px; }
+        .message { margin: 10px 0; }
+        .user-message { color: blue; }
+        .ai-message { color: green; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>AI English Tutor</h1>
+        <h1>🤖 AI English Tutor</h1>
         
         <div class="nav">
-            <button onclick="showPage('home')">Trang chủ</button>
-            <button onclick="showPage('exercises')">Bài tập</button>
-            <button onclick="showPage('exams')">Đề thi</button>
-            <button onclick="showPage('chat')">Chat AI</button>
+            <button onclick="showPage('home')">🏠 Trang chủ</button>
+            <button onclick="showPage('exercises')">📝 Bài tập</button>
+            <button onclick="showPage('exams')">📋 Đề thi</button>
+            <button onclick="showPage('chat')">💬 Chat AI</button>
         </div>
 
+        <!-- Trang chủ -->
         <div id="homePage">
             <h2>Chào mừng bạn!</h2>
-            <p>Học tiếng Anh với AI</p>
+            <p>Học tiếng Anh thông minh với trí tuệ nhân tạo</p>
+            <p>Chọn chức năng ở trên để bắt đầu:</p>
+            <ul>
+                <li>📝 Tạo bài tập theo chủ đề</li>
+                <li>📋 Luyện đề thi các loại</li>
+                <li>💬 Hỏi đáp với AI 24/7</li>
+            </ul>
         </div>
 
+        <!-- Trang bài tập -->
         <div id="exercisesPage" class="hidden">
-            <h2>Tạo bài tập</h2>
+            <h2>📝 Tạo bài tập</h2>
             <select id="topic">
-                <option value="present simple">Thì hiện tại đơn</option>
-                <option value="past simple">Thì quá khứ đơn</option>
+                <option value="Thì hiện tại đơn">Thì hiện tại đơn</option>
+                <option value="Thì quá khứ đơn">Thì quá khứ đơn</option>
+                <option value="Thì tương lai">Thì tương lai</option>
+                <option value="Câu điều kiện">Câu điều kiện</option>
+                <option value="Từ vựng cơ bản">Từ vựng cơ bản</option>
             </select>
             <button onclick="createExercise()">Tạo bài tập</button>
-            <div id="exerciseResult"></div>
+            <div id="exerciseResult" class="result-box"></div>
         </div>
 
+        <!-- Trang đề thi -->
         <div id="examsPage" class="hidden">
-            <h2>Tạo đề thi</h2>
+            <h2>📋 Tạo đề thi</h2>
             <select id="examType">
-                <option value="15min">15 phút</option>
-                <option value="midterm">Giữa kỳ</option>
+                <option value="15 phút">Kiểm tra 15 phút</option>
+                <option value="giữa kỳ">Giữa kỳ</option>
+                <option value="cuối kỳ">Cuối kỳ</option>
+                <option value="học sinh giỏi">Học sinh giỏi</option>
+                <option value="tốt nghiệp">Tốt nghiệp</option>
             </select>
             <button onclick="createExam()">Tạo đề thi</button>
-            <div id="examResult"></div>
+            <div id="examResult" class="result-box"></div>
         </div>
 
+        <!-- Trang chat -->
         <div id="chatPage" class="hidden">
-            <h2>Chat với AI</h2>
+            <h2>💬 Chat với AI Tutor</h2>
             <div class="chat-box" id="chatBox"></div>
-            <input type="text" id="message" placeholder="Nhập câu hỏi...">
+            <input type="text" id="message" placeholder="Nhập câu hỏi tiếng Anh của bạn...">
             <button onclick="sendMessage()">Gửi</button>
         </div>
     </div>
 
     <script>
+        // 👉 QUAN TRỌNG: Sửa URL này thành URL worker của bạn
         const API_URL = 'https://ai-english-tutor.your-subdomain.workers.dev';
+        
         let messages = [];
 
         function showPage(page) {
@@ -89,14 +112,24 @@
 
         async function createExercise() {
             const topic = document.getElementById('topic').value;
+            document.getElementById('exerciseResult').innerHTML = 'Đang tạo bài tập...';
             const result = await callAPI('/api/generate-exercise', {topic});
-            document.getElementById('exerciseResult').innerHTML = JSON.stringify(result);
+            if(result.error) {
+                document.getElementById('exerciseResult').innerHTML = 'Lỗi: ' + result.error;
+            } else {
+                document.getElementById('exerciseResult').innerHTML = result.response;
+            }
         }
 
         async function createExam() {
             const type = document.getElementById('examType').value;
+            document.getElementById('examResult').innerHTML = 'Đang tạo đề thi...';
             const result = await callAPI('/api/generate-exam', {type});
-            document.getElementById('examResult').innerHTML = JSON.stringify(result);
+            if(result.error) {
+                document.getElementById('examResult').innerHTML = 'Lỗi: ' + result.error;
+            } else {
+                document.getElementById('examResult').innerHTML = result.response;
+            }
         }
 
         async function sendMessage() {
@@ -104,15 +137,23 @@
             if(!msg) return;
             
             const chatBox = document.getElementById('chatBox');
-            chatBox.innerHTML += `<p><b>Bạn:</b> ${msg}</p>`;
+            chatBox.innerHTML += `<div class="message user-message"><b>Bạn:</b> ${msg}</div>`;
             document.getElementById('message').value = '';
             
             const result = await callAPI('/api/chat', {message: msg, history: messages});
-            chatBox.innerHTML += `<p><b>AI:</b> ${result.response || 'Lỗi'}</p>`;
-            messages.push({role: 'user', content: msg});
-            messages.push({role: 'assistant', content: result.response});
+            
+            if(result.error) {
+                chatBox.innerHTML += `<div class="message ai-message"><b>AI:</b> Lỗi: ${result.error}</div>`;
+            } else {
+                chatBox.innerHTML += `<div class="message ai-message"><b>AI:</b> ${result.response}</div>`;
+                messages.push({role: 'user', content: msg});
+                messages.push({role: 'assistant', content: result.response});
+            }
+            
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
 
+        // Mở trang chủ khi bắt đầu
         showPage('home');
     </script>
 </body>
