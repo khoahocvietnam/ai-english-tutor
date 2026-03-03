@@ -75,16 +75,18 @@ export default {
         }
 
         const geminiResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.GEMINI_API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${env.GEMINI_API_KEY}`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+            },
             body: JSON.stringify({
               contents: [
                 {
                   parts: [
                     {
-                      text: `Bạn là gia sư tiếng Anh cấp 3. Hãy trả lời câu hỏi sau bằng tiếng Việt, giải thích dễ hiểu: ${body.message}`,
+                      text: `Bạn là gia sư tiếng Anh cấp 3. Hãy trả lời bằng tiếng Việt, giải thích dễ hiểu: ${body.message}`,
                     },
                   ],
                 },
@@ -159,13 +161,15 @@ export default {
 
         const prompt = `Tạo ${count} câu hỏi trắc nghiệm tiếng Anh về chủ đề "${topic}".
 Mỗi câu có 4 đáp án A, B, C, D.
-Trả về JSON array.`;
+Trả về đúng JSON array, không thêm giải thích.`;
 
         const geminiResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.GEMINI_API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${env.GEMINI_API_KEY}`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+            },
             body: JSON.stringify({
               contents: [
                 {
@@ -192,8 +196,7 @@ Trả về JSON array.`;
         }
 
         const reply =
-          geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ||
-          "[]";
+          geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
 
         return new Response(reply, {
           headers: { "Content-Type": "application/json", ...headers },
@@ -209,7 +212,9 @@ Trả về JSON array.`;
       );
     } catch (error) {
       return new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({
+          error: error.message,
+        }),
         {
           status: 500,
           headers: { "Content-Type": "application/json", ...headers },
