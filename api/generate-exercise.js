@@ -7,42 +7,35 @@ export default async function handler(req, res) {
   try {
     const { topic, grade, count = 10, difficulty = "Trung bình", message } = req.body;
 
-    if (!process.env.GEMINI_API_KEY) {
-      return res.status(500).json({
-        error: "GEMINI_API_KEY chưa cấu hình"
-      });
-    }
+    const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
-    // ==========================================
-    // 🔵 CHAT AI
-    // ==========================================
+    // =====================================================
+    // 🔵 CHAT AI (NHANH + ỔN ĐỊNH)
+    // =====================================================
     if (message && message.trim() !== "") {
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              {
-                role: "user",
-                parts: [{ text: message.trim() }]
-              }
-            ],
-            generationConfig: {
-              temperature: 0.5,
-              maxOutputTokens: 400
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: message.trim() }]
             }
-          })
-        }
-      );
+          ],
+          generationConfig: {
+            temperature: 0.6,
+            maxOutputTokens: 400
+          }
+        })
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
         return res.status(response.status).json({
-          error: data.error?.message || "Lỗi từ Gemini"
+          error: data.error?.message || "Lỗi từ Gemini API"
         });
       }
 
@@ -53,144 +46,112 @@ export default async function handler(req, res) {
       });
     }
 
-    // ==========================================
-    // 🟣 TẠO BÀI TẬP
-    // ==========================================
+    // =====================================================
+    // 🟣 TẠO BÀI TẬP CHUẨN JSON
+    // =====================================================
     if (topic && grade) {
 
       const prompt = `
-Tạo ${count} câu trắc nghiệm tiếng Anh.
+Bạn là hệ thống tạo đề thi chuyên nghiệp.
+
+TẠO CHÍNH XÁC ${count} câu trắc nghiệm tiếng Anh.
 
 Chủ đề: ${topic}
 Trình độ: ${grade}
 Độ khó: ${difficulty}
 
-BẮT BUỘC:
-- Chỉ trả về JSON
-- Không markdown
-- Không giải thích
-- Không thêm text ngoài JSON
+YÊU CẦU BẮT BUỘC:
+- Mỗi câu có đúng 4 đáp án
+- options PHẢI là mảng 4 phần tử
+- correct CHỈ là A, B, C hoặc D (KHÔNG có dấu chấm)
+- KHÔNG giải thích
+- KHÔNG thêm chữ ngoài JSON
+- CHỈ trả JSON thuần
 
-Format duy nhất:
+FORMAT DUY NHẤT:
 
 {
   "questions": [
     {
       "question": "Câu hỏi",
-      "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+      "options": [
+        "A. ...",
+        "B. ...",
+        "C. ...",
+        "D. ..."
+      ],
       "correct": "A"
     }
   ]
 }
 `;
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              {
-                role: "user",
-                parts: [{ text: prompt }]
-              }
-            ],
-            generationConfig: {
-              temperature: 0.6,
-              maxOutputTokens: 2000
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: prompt }]
             }
-          })
-        }
-      );
+          ],
+          generationConfig: {
+            temperature: 0.4,
+            maxOutputTokens: 1500,
+            responseMimeType: "application/json"
+          }
+        })
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
         return res.status(response.status).json({
-          error: data.error?.message || "Lỗi từ Gemini"
+          error: data.error?.message || "Lỗi từ Gemini API"
         });
       }
 
       let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (!text) {
-        return res.status(500).json({
-          error: "AI không trả dữ liệu"
-        });
+        return res.status(500).json({ error: "AI không trả dữ liệu" });
       }
 
-      // ===============================
-      // 🔥 AUTO EXTRACT JSON
-      // ===============================
+      // 🔥 CLEAN JSON nếu AI lỡ bọc ```json
+      text = text.trim()
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
 
-      text = text.trim();
+      try {
+        const parsed = JSON.parse(text);
 
-      // nếu AI lỡ thêm ```json
-      text = text.replace(/```json/g, "").replace(/```/g, "");
+        // 🔥 VALIDATE LẠI CHO CHẮC
+        if (!parsed.questions || !Array.isArray(parsed.questions)) {
+          throw new Error("Sai cấu trúc questions");
+        }
 
-      // tìm JSON block đầu tiên
-      const match = text.match(/\{[\s\S]*\}/);
+        parsed.questions.forEach(q => {
+          if (!q.question) throw new Error("Thiếu question");
+          if (!Array.isArray(q.options) || q.options.length !== 4)
+            throw new Error("Options không đủ 4");
+          if (!["A","B","C","D"].includes(q.correct))
+            throw new Error("Correct sai format");
+        });
 
-      if (!match) {
+        return res.status(200).json(parsed);
+
+      } catch (err) {
         return res.status(500).json({
-          error: "Không tìm thấy JSON hợp lệ",
+          error: "AI trả sai format JSON",
           raw: text
         });
       }
-
-    try {
-  const parsed = JSON.parse(match[0]);
-
-  if (!parsed.questions || !Array.isArray(parsed.questions)) {
-    throw new Error("Sai cấu trúc JSON");
-  }
-
-  const fixedQuestions = parsed.questions.map(q => {
-
-    if (q.options && Array.isArray(q.options)) {
-      return q;
-    }
-
-    if (q.A && q.B && q.C && q.D) {
-      return {
-        question: q.question,
-        options: [
-          `A. ${q.A}`,
-          `B. ${q.B}`,
-          `C. ${q.C}`,
-          `D. ${q.D}`
-        ],
-        correct: q.correct
-      };
-    }
-
-    return {
-      question: q.question || "Câu hỏi không hợp lệ",
-      options: [
-        "A. Đang cập nhật",
-        "B. Đang cập nhật",
-        "C. Đang cập nhật",
-        "D. Đang cập nhật"
-      ],
-      correct: "A"
-    };
-  });
-
-  return res.status(200).json({
-    questions: fixedQuestions
-  });
-
-} catch (err) {
-  return res.status(500).json({
-    error: "AI trả sai JSON",
-    raw: text
-  });
-}
     }
 
     return res.status(400).json({
-      error: "Thiếu message hoặc topic + grade"
+      error: "Thiếu dữ liệu"
     });
 
   } catch (error) {
