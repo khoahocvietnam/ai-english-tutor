@@ -139,21 +139,54 @@ Format duy nhất:
         });
       }
 
-      try {
-        const parsed = JSON.parse(match[0]);
+    try {
+  const parsed = JSON.parse(match[0]);
 
-        if (!parsed.questions || !Array.isArray(parsed.questions)) {
-          throw new Error("Sai cấu trúc JSON");
-        }
+  if (!parsed.questions || !Array.isArray(parsed.questions)) {
+    throw new Error("Sai cấu trúc JSON");
+  }
 
-        return res.status(200).json(parsed);
+  const fixedQuestions = parsed.questions.map(q => {
 
-      } catch (err) {
-        return res.status(500).json({
-          error: "AI trả sai JSON",
-          raw: text
-        });
-      }
+    if (q.options && Array.isArray(q.options)) {
+      return q;
+    }
+
+    if (q.A && q.B && q.C && q.D) {
+      return {
+        question: q.question,
+        options: [
+          `A. ${q.A}`,
+          `B. ${q.B}`,
+          `C. ${q.C}`,
+          `D. ${q.D}`
+        ],
+        correct: q.correct
+      };
+    }
+
+    return {
+      question: q.question || "Câu hỏi không hợp lệ",
+      options: [
+        "A. Đang cập nhật",
+        "B. Đang cập nhật",
+        "C. Đang cập nhật",
+        "D. Đang cập nhật"
+      ],
+      correct: "A"
+    };
+  });
+
+  return res.status(200).json({
+    questions: fixedQuestions
+  });
+
+} catch (err) {
+  return res.status(500).json({
+    error: "AI trả sai JSON",
+    raw: text
+  });
+}
     }
 
     return res.status(400).json({
