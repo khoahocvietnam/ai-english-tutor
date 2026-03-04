@@ -1376,7 +1376,7 @@
             
             resultDiv.innerHTML = '<div style="text-align: center;"><div class="loading"></div> Đang tạo đề thi...</div>';
             
-            const result = await callAPI('/api/generate-exam', { type, grade });
+            const result = await callAPI('/api/generate-exercise', { type, grade });
             
             if(result.error) {
                 resultDiv.innerHTML = `<p style="color: red;">Lỗi: ${result.error}</p>`;
