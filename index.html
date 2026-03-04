@@ -643,9 +643,9 @@
 
     <script>
         // ==================== CẤU HÌNH ====================
-      const CONFIG = {
-    API_URL: '',
-};
+        const CONFIG = {
+            API_URL: window.location.origin,
+        };
 
         // Danh sách chủ đề
         const topics = [
@@ -1165,7 +1165,7 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
-        // ==================== SỬA FUNCTION NÀY ====================
+        // ==================== CHAT ====================
         async function sendMessage() {
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
@@ -1196,7 +1196,6 @@
                 const loadingMsg = document.querySelector('#chatMessages .message:last-child');
                 if(loadingMsg) loadingMsg.remove();
                 
-                // 🔴 SỬA LỖI 1: Chỉ đọc response.json() 1 lần
                 let result;
                 try {
                     result = await response.json();
@@ -1210,18 +1209,14 @@
                     return;
                 }
                 
-                // 🔴 ĐÃ XÓA DÒNG GÂY LỖI: const result = await response.json();
-                
                 if(result.error) {
                     addMessage('bot', '❌ Lỗi: ' + result.error);
                 } else {
-                    // 🔴 SỬA LỖI 3: Hiển thị đúng nội dung, không hiện [object Object]
                     if (result.response) {
                         addMessage('bot', result.response);
                     } else if (result.exercises) {
                         addMessage('bot', 'AI đã tạo bài tập cho bạn ở mục Bài tập.');
                     } else {
-                        // Chỉ JSON.stringify khi thực sự cần debug
                         addMessage('bot', 'Đã nhận phản hồi từ AI');
                     }
                     // Lưu vào lịch sử
@@ -1240,7 +1235,7 @@
             }
         }
 
-        // ==================== SỬA FUNCTION NÀY ====================
+        // ==================== API ====================
         async function callAPI(endpoint, data) {
             try {
                 const response = await fetch(CONFIG.API_URL + endpoint, {
@@ -1268,34 +1263,20 @@
         let currentExercise = null;
 
         async function generateExercise() {
-    const topic = document.getElementById('exerciseTopic').value;
-    const count = document.getElementById('questionCount').value;
-    const difficulty = document.getElementById('difficulty').value;
-    const resultDiv = document.getElementById('exerciseResult');
-
-    resultDiv.innerHTML = '<div style="text-align: center;"><div class="loading"></div> Đang tạo bài tập...</div>';
-
-    const result = await callAPI('/api/generate-exercise', { 
-        topic,
-        grade: userData.grade,
-        count,
-        difficulty
-    });
-
-    if(result.error) {
-        resultDiv.innerHTML = `<p style="color: red;">Lỗi: ${result.error}</p>`;
-    } else {
-        displayExercise(result, topic);
-    }
-}
+            const topic = document.getElementById('exerciseTopic').value;
+            const count = document.getElementById('questionCount').value;
+            const difficulty = document.getElementById('difficulty').value;
+            
             const resultDiv = document.getElementById('exerciseResult');
             
             resultDiv.innerHTML = '<div style="text-align: center;"><div class="loading"></div> Đang tạo bài tập...</div>';
             
-const result = await callAPI('/api/generate-exercise', { 
-    topic, 
-    grade: userData.grade   // 🔥 THÊM DÒNG NÀY
-});
+            const result = await callAPI('/api/generate-exercise', { 
+                topic, 
+                grade: userData.grade,
+                count: count,
+                difficulty: difficulty
+            });
             
             if(result.error) {
                 resultDiv.innerHTML = `<p style="color: red;">Lỗi: ${result.error}</p>`;
@@ -1304,6 +1285,7 @@ const result = await callAPI('/api/generate-exercise', {
             }
         }
 
+        // 🔴 SỬA LỖI: Thay đổi cách tạo options để value là A, B, C, D
         function displayExercise(data, topic) {
             const resultDiv = document.getElementById('exerciseResult');
             
@@ -1333,9 +1315,12 @@ const result = await callAPI('/api/generate-exercise', {
                         <div class="question-card" data-question-id="${index}">
                             <div class="question-text">Câu ${index + 1}: ${questionText}</div>
                             <div class="options">
-                                ${options.map(opt => `
+                                ${options.map((opt, i) => `
                                     <label class="option">
-                                        <input type="radio" name="q${index}" value="${opt}" onchange="saveAnswer(${index}, '${opt}')">
+                                        <input type="radio" 
+                                               name="q${index}" 
+                                               value="${String.fromCharCode(65 + i)}"
+                                               onchange="saveAnswer(${index}, '${String.fromCharCode(65 + i)}')">
                                         ${opt}
                                     </label>
                                 `).join('')}
@@ -1363,6 +1348,7 @@ const result = await callAPI('/api/generate-exercise', {
             currentExercise.answers[questionIndex] = answer;
         }
 
+        // 🔴 SỬA LỖI: So sánh chính xác (giờ value là A, B, C, D)
         function checkExerciseAnswers() {
             if (!currentExercise || !currentExercise.questions) return;
             
@@ -1389,8 +1375,8 @@ const result = await callAPI('/api/generate-exercise', {
                         }
                     });
                     
-                    // 🔴 SỬA LỖI 4: Dùng startsWith() thay vì includes()
-                    if (userAnswer && userAnswer.startsWith(correctAnswer)) {
+                    // So sánh chính xác
+                    if (userAnswer && userAnswer === correctAnswer) {
                         correct++;
                     }
                 }
@@ -1404,19 +1390,29 @@ const result = await callAPI('/api/generate-exercise', {
         }
 
         // ==================== ĐỀ THI ====================
+        // 🔴 SỬA LỖI: Gọi API đúng với backend
         async function generateExam() {
             const type = document.getElementById('examType').value;
             const grade = document.getElementById('examGrade').value;
             const resultDiv = document.getElementById('examResult');
             
+            // Tìm thông tin đề thi
+            const examType = examTypes.find(t => t.id === type);
+            
             resultDiv.innerHTML = '<div style="text-align: center;"><div class="loading"></div> Đang tạo đề thi...</div>';
             
-            const result = await callAPI('/api/generate-exercise', { type, grade });
+            const result = await callAPI('/api/generate-exercise', { 
+                topic: examType.name,
+                grade,
+                count: examType.questions,
+                difficulty: 'mixed'
+            });
             
             if(result.error) {
                 resultDiv.innerHTML = `<p style="color: red;">Lỗi: ${result.error}</p>`;
             } else {
-                resultDiv.innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+                // Hiển thị đề thi dưới dạng bài tập
+                displayExercise(result, examType.name);
             }
         }
 
