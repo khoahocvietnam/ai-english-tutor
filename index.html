@@ -643,9 +643,9 @@
 
     <script>
         // ==================== CẤU HÌNH ====================
-        const CONFIG = {
-            API_URL: 'https://ai-english-tutor.lenguyenngocthieu55.workers.dev', // Sửa sau khi có worker
-        };
+      const CONFIG = {
+    API_URL: '',
+};
 
         // Danh sách chủ đề
         const topics = [
@@ -1183,7 +1183,7 @@
                 const context = `Người dùng: ${userData.name}, Lớp: ${userData.grade}, Đã học: ${userData.exercisesDone} bài, Điểm TB: ${userData.averageScore}%, Điểm yếu: ${userData.weaknesses.join(', ')}`;
                 
                 // Gọi API
-                const response = await fetch(CONFIG.API_URL + '/api/chat', {
+                const response = await fetch(CONFIG.API_URL + '/api/generate-exercise', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -1243,22 +1243,6 @@
             } catch(e) {
                 console.error('API Error:', e);
                 return { error: 'Không thể kết nối đến server. Kiểm tra API_URL: ' + CONFIG.API_URL };
-            }
-        }
-
-        // ==================== KIỂM TRA KẾT NỐI ====================
-        async function testAPIConnection() {
-            try {
-                const response = await fetch(CONFIG.API_URL + '/api/health');
-                if(response.ok) {
-                    const data = await response.json();
-                    console.log('✅ Kết nối API thành công:', data);
-                } else {
-                    console.warn('⚠️ API health check failed:', response.status);
-                }
-            } catch(e) {
-                console.error('❌ Không thể kết nối API:', e);
-                alert('⚠️ Không thể kết nối đến server. Vui lòng kiểm tra API_URL trong code!');
             }
         }
 
@@ -1431,9 +1415,6 @@
         // ==================== KHỞI TẠO ỨNG DỤNG ====================
         loadUserData();
         loadPage('dashboard');
-        
-        // Kiểm tra kết nối API
-        testAPIConnection();
     </script>
 </body>
 </html>
