@@ -1196,20 +1196,38 @@
                 const loadingMsg = document.querySelector('#chatMessages .message:last-child');
                 if(loadingMsg) loadingMsg.remove();
                 
-                if(!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                // 🔴 SỬA LỖI 1: Chỉ đọc response.json() 1 lần
+                let result;
+                try {
+                    result = await response.json();
+                } catch {
+                    addMessage('bot', '❌ Server không trả về JSON hợp lệ');
+                    return;
+                }
+
+                if (!response.ok) {
+                    addMessage('bot', '❌ Lỗi: ' + (result.error || `HTTP ${response.status}`));
+                    return;
                 }
                 
-                const result = await response.json();
+                // 🔴 ĐÃ XÓA DÒNG GÂY LỖI: const result = await response.json();
                 
                 if(result.error) {
                     addMessage('bot', '❌ Lỗi: ' + result.error);
                 } else {
-                    addMessage('bot', result.response || 'Không có phản hồi');
+                    // 🔴 SỬA LỖI 3: Hiển thị đúng nội dung, không hiện [object Object]
+                    if (result.response) {
+                        addMessage('bot', result.response);
+                    } else if (result.exercises) {
+                        addMessage('bot', 'AI đã tạo bài tập cho bạn ở mục Bài tập.');
+                    } else {
+                        // Chỉ JSON.stringify khi thực sự cần debug
+                        addMessage('bot', 'Đã nhận phản hồi từ AI');
+                    }
                     // Lưu vào lịch sử
                     chatMessages.push(
                         { role: 'user', content: message },
-                        { role: 'assistant', content: result.response }
+                        { role: 'assistant', content: result.response || 'Phản hồi từ AI' }
                     );
                 }
             } catch(e) {
@@ -1355,7 +1373,8 @@
                         }
                     });
                     
-                    if (userAnswer && userAnswer.includes(correctAnswer)) {
+                    // 🔴 SỬA LỖI 4: Dùng startsWith() thay vì includes()
+                    if (userAnswer && userAnswer.startsWith(correctAnswer)) {
                         correct++;
                     }
                 }
