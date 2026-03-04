@@ -1031,12 +1031,27 @@
             `;
         }
 
-        // Pronunciation Page
+        // 🔥 LỖI 4 ĐƯỢC SỬA - PHÁT ÂM PRO
         function getPronunciationPage() {
             return `
                 <div class="exercise-generator">
                     <h2>Luyện phát âm 🎤</h2>
-                    <p>Tính năng đang phát triển...</p>
+
+                    <div class="form-group">
+                        <label>Nhập câu tiếng Anh:</label>
+                        <input type="text" id="pronunciationText" placeholder="Ví dụ: I love learning English">
+                    </div>
+
+                    <button class="btn-primary" onclick="speakText()">
+                        🔊 Nghe phát âm chuẩn
+                    </button>
+
+                    <button class="btn-primary" style="margin-top:10px;background:#4caf50"
+                        onclick="startRecognition()">
+                        🎙️ Tôi đọc lại
+                    </button>
+
+                    <div id="pronunciationResult" style="margin-top:20px;"></div>
                 </div>
             `;
         }
@@ -1182,13 +1197,12 @@
                 // Context về người học
                 const context = `Người dùng: ${userData.name}, Lớp: ${userData.grade}, Đã học: ${userData.exercisesDone} bài, Điểm TB: ${userData.averageScore}%, Điểm yếu: ${userData.weaknesses.join(', ')}`;
                 
-                // Gọi API
+                // 🔥 LỖI 3 ĐƯỢC SỬA - BỎ history để chat nhanh hơn
                 const response = await fetch(CONFIG.API_URL + '/api/generate-exercise', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        message: `[${context}] ${message}`,
-                        history: chatMessages.slice(-5)
+                        message: `[${context}] ${message}`
                     })
                 });
                 
@@ -1238,17 +1252,18 @@
         // ==================== API ====================
         async function callAPI(endpoint, data) {
             try {
+                console.log('Gọi API:', endpoint, data);
+                
                 const response = await fetch(CONFIG.API_URL + endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
                 
-                // Đọc response dù có ok hay không
                 const result = await response.json();
+                console.log('API response:', result);
                 
                 if(!response.ok) {
-                    // Trả về lỗi từ server nếu có
                     return { error: result.error || result.details || 'Lỗi từ server' };
                 }
                 
@@ -1274,7 +1289,7 @@
             const result = await callAPI('/api/generate-exercise', { 
                 topic, 
                 grade: userData.grade,
-                count: count,
+                count: parseInt(count),
                 difficulty: difficulty
             });
             
@@ -1285,18 +1300,28 @@
             }
         }
 
-        // 🔴 SỬA LỖI: Thay đổi cách tạo options để value là A, B, C, D
         function displayExercise(data, topic) {
             const resultDiv = document.getElementById('exerciseResult');
-            
+
             try {
                 let questions = [];
-                if (data.exercises) {
+
+                // Xử lý cấu trúc dữ liệu từ backend
+                if (data.questions && Array.isArray(data.questions)) {
+                    questions = data.questions;
+                } 
+                else if (data.exercises && Array.isArray(data.exercises)) {
                     questions = data.exercises;
-                } else if (Array.isArray(data)) {
+                } 
+                else if (Array.isArray(data)) {
                     questions = data;
-                } else {
-                    questions = [data];
+                } 
+                else {
+                    throw new Error("Sai cấu trúc dữ liệu từ server");
+                }
+
+                if (questions.length === 0) {
+                    throw new Error("Không có câu hỏi nào được tạo");
                 }
 
                 currentExercise = {
@@ -1304,40 +1329,58 @@
                     questions: questions,
                     answers: {}
                 };
-                
+
                 let html = '<h3>Bài tập của bạn:</h3>';
-                
+
                 questions.forEach((q, index) => {
-                    const questionText = q.question || q.text || `Câu hỏi ${index + 1}`;
-                    const options = q.options || ['A. Option 1', 'B. Option 2', 'C. Option 3', 'D. Option 4'];
+                    const questionText = q.question || `Câu hỏi ${index + 1}`;
                     
+                    // 🔥 LỖI 1 ĐƯỢC SỬA - KIỂM TRA OPTIONS CHẶT CHẼ
+                    if (!q.options || !Array.isArray(q.options) || q.options.length !== 4) {
+                        throw new Error(`Câu hỏi ${index + 1} không có đủ 4 đáp án hợp lệ`);
+                    }
+                    
+                    const options = q.options;
+
                     html += `
-                        <div class="question-card" data-question-id="${index}">
-                            <div class="question-text">Câu ${index + 1}: ${questionText}</div>
+                        <div class="question-card">
+                            <div class="question-text">
+                                Câu ${index + 1}: ${questionText}
+                            </div>
                             <div class="options">
                                 ${options.map((opt, i) => `
                                     <label class="option">
-                                        <input type="radio" 
-                                               name="q${index}" 
+                                        <input type="radio"
+                                               name="q${index}"
                                                value="${String.fromCharCode(65 + i)}"
                                                onchange="saveAnswer(${index}, '${String.fromCharCode(65 + i)}')">
                                         ${opt}
                                     </label>
                                 `).join('')}
                             </div>
-                            <div class="explanation" style="display: none;" id="exp${index}">
-                                <strong>Đáp án đúng: ${q.correct || 'A'}</strong><br>
-                                ${q.explanation || 'Giải thích sẽ hiện sau khi kiểm tra'}
+                            <div class="explanation" style="display:none;" id="exp${index}">
+                                <strong>Đáp án đúng: ${q.correct}</strong><br>
+                                ${q.explanation || ''}
                             </div>
                         </div>
                     `;
                 });
-                
-                html += `<button class="btn-primary" onclick="checkExerciseAnswers()" style="margin-top: 1rem;">Kiểm tra đáp án</button>`;
-                
+
+                html += `
+                    <button class="btn-primary" onclick="checkExerciseAnswers()">
+                        Kiểm tra đáp án
+                    </button>
+                `;
+
                 resultDiv.innerHTML = html;
-            } catch(e) {
-                resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+
+            } catch (e) {
+                resultDiv.innerHTML = `
+                    <p style="color:red;">
+                        Lỗi hiển thị bài tập: ${e.message}
+                    </p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
             }
         }
 
@@ -1348,7 +1391,6 @@
             currentExercise.answers[questionIndex] = answer;
         }
 
-        // 🔴 SỬA LỖI: So sánh chính xác (giờ value là A, B, C, D)
         function checkExerciseAnswers() {
             if (!currentExercise || !currentExercise.questions) return;
             
@@ -1362,7 +1404,9 @@
                     expDiv.style.display = 'block';
                     
                     const userAnswer = answers[index];
-                    const correctAnswer = q.correct || 'A';
+                    
+                    // 🔥 LỖI 2 ĐƯỢC SỬA - LOẠI BỎ DẤU CHẤM
+                    const correctAnswer = (q.correct || 'A').replace('.', '').trim();
                     
                     // Highlight đáp án
                     const options = document.querySelectorAll(`[name="q${index}"]`);
@@ -1375,7 +1419,6 @@
                         }
                     });
                     
-                    // So sánh chính xác
                     if (userAnswer && userAnswer === correctAnswer) {
                         correct++;
                     }
@@ -1385,19 +1428,20 @@
             const score = Math.round((correct / questions.length) * 100);
             alert(`Bạn trả lời đúng ${correct}/${questions.length} câu! Điểm: ${score}%`);
             
-            // Lưu kết quả
             saveExerciseResult(currentExercise.topic, questions, answers, score);
         }
 
         // ==================== ĐỀ THI ====================
-        // 🔴 SỬA LỖI: Gọi API đúng với backend
         async function generateExam() {
             const type = document.getElementById('examType').value;
             const grade = document.getElementById('examGrade').value;
             const resultDiv = document.getElementById('examResult');
             
-            // Tìm thông tin đề thi
             const examType = examTypes.find(t => t.id === type);
+            if (!examType) {
+                resultDiv.innerHTML = '<p style="color: red;">Không tìm thấy loại đề thi</p>';
+                return;
+            }
             
             resultDiv.innerHTML = '<div style="text-align: center;"><div class="loading"></div> Đang tạo đề thi...</div>';
             
@@ -1411,9 +1455,61 @@
             if(result.error) {
                 resultDiv.innerHTML = `<p style="color: red;">Lỗi: ${result.error}</p>`;
             } else {
-                // Hiển thị đề thi dưới dạng bài tập
                 displayExercise(result, examType.name);
             }
+        }
+
+        // ==================== PHÁT ÂM - TÍNH NĂNG MỚI ====================
+        function speakText() {
+            const text = document.getElementById('pronunciationText').value;
+            if (!text) return;
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.9;
+            speechSynthesis.speak(utterance);
+        }
+
+        function startRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert("Trình duyệt không hỗ trợ nhận diện giọng nói");
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+
+            recognition.onresult = function(event) {
+                const spokenText = event.results[0][0].transcript;
+                const original = document.getElementById('pronunciationText').value;
+
+                const similarity = compareText(original, spokenText);
+
+                document.getElementById('pronunciationResult').innerHTML = `
+                    <p><strong>Bạn nói:</strong> ${spokenText}</p>
+                    <p><strong>Độ chính xác:</strong> ${similarity}%</p>
+                `;
+            };
+
+            recognition.start();
+        }
+
+        function compareText(a, b) {
+            a = a.toLowerCase().trim();
+            b = b.toLowerCase().trim();
+
+            if (!a) return 0;
+
+            let same = 0;
+            const wordsA = a.split(" ");
+            const wordsB = b.split(" ");
+
+            wordsA.forEach(word => {
+                if (wordsB.includes(word)) same++;
+            });
+
+            return Math.round((same / wordsA.length) * 100);
         }
 
         // ==================== HỒ SƠ ====================
