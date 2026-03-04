@@ -6,12 +6,42 @@ export default async function handler(req, res) {
   try {
     const { topic, grade } = req.body;
 
-    if (!topic || !grade) {
-      return res.status(400).json({
-        error: "Thiếu topic hoặc grade"
-      });
-    }
+   if (!topic || !grade) {
+  // Nếu không có topic/grade -> xử lý như Chat AI
+  const { message } = req.body;
 
+  if (!message) {
+    return res.status(400).json({
+      error: "Thiếu dữ liệu"
+    });
+  }
+
+  // Gọi Gemini như chat bình thường
+  const chatPrompt = message;
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: chatPrompt }]
+          }
+        ]
+      })
+    }
+  );
+
+  const data = await response.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  return res.status(200).json({
+    response: text
+  });
+}
     if (!process.env.GEMINI_API_KEY) {
       return res.status(500).json({
         error: "GEMINI_API_KEY chưa được cấu hình"
