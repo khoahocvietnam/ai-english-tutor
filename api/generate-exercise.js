@@ -6,6 +6,18 @@ export default async function handler(req, res) {
   try {
     const { topic, grade } = req.body;
 
+    if (!topic || !grade) {
+      return res.status(400).json({
+        error: "Thiếu topic hoặc grade"
+      });
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({
+        error: "GEMINI_API_KEY chưa được cấu hình"
+      });
+    }
+
     const prompt = `
 Tạo đề thi tiếng Anh cho lớp ${grade}.
 Chủ đề: ${topic}.
@@ -36,14 +48,45 @@ Trả về JSON theo format:
               role: "user",
               parts: [{ text: prompt }]
             }
-          ]
+          ],
+          generationConfig: {
+            response_mime_type: "application/json"
+          }
         })
       }
     );
 
     const data = await response.json();
 
-    res.status(200).json(data);
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: data.error?.message || "Lỗi từ Gemini API"
+      });
+    }
+
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!text) {
+      return res.status(500).json({
+        error: "Gemini không trả về nội dung"
+      });
+    }
+
+    const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
+
+    let parsed;
+
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch (e) {
+      return res.status(500).json({
+        error: "Gemini trả về JSON không hợp lệ",
+        raw: text
+      });
+    }
+
+    res.status(200).json(parsed);
+
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
