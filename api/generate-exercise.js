@@ -9,13 +9,13 @@ export default async function handler(req, res) {
 
     if (!process.env.GEMINI_API_KEY) {
       return res.status(500).json({
-        error: "GEMINI_API_KEY chưa được cấu hình"
+        error: "GEMINI_API_KEY chưa cấu hình"
       });
     }
 
-    // =====================================================
+    // ==========================================
     // 🔵 CHAT AI
-    // =====================================================
+    // ==========================================
     if (message && message.trim() !== "") {
 
       const response = await fetch(
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
 
       if (!response.ok) {
         return res.status(response.status).json({
-          error: data.error?.message || "Lỗi từ Gemini API"
+          error: data.error?.message || "Lỗi từ Gemini"
         });
       }
 
@@ -53,9 +53,9 @@ export default async function handler(req, res) {
       });
     }
 
-    // =====================================================
-    // 🟣 TẠO BÀI TẬP / ĐỀ THI
-    // =====================================================
+    // ==========================================
+    // 🟣 TẠO BÀI TẬP
+    // ==========================================
     if (topic && grade) {
 
       const prompt = `
@@ -65,20 +65,18 @@ Chủ đề: ${topic}
 Trình độ: ${grade}
 Độ khó: ${difficulty}
 
-QUY TẮC BẮT BUỘC:
-- Mỗi câu có đúng 4 đáp án
-- Định dạng đáp án phải là: "A. ...", "B. ...", "C. ...", "D. ..."
-- Chỉ có 1 đáp án đúng
-- KHÔNG thêm bất kỳ văn bản nào ngoài JSON
-- KHÔNG markdown
-- KHÔNG giải thích
+BẮT BUỘC:
+- Chỉ trả về JSON
+- Không markdown
+- Không giải thích
+- Không thêm text ngoài JSON
 
-Chỉ trả về JSON như sau:
+Format duy nhất:
 
 {
   "questions": [
     {
-      "question": "Câu hỏi ở đây",
+      "question": "Câu hỏi",
       "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
       "correct": "A"
     }
@@ -100,8 +98,7 @@ Chỉ trả về JSON như sau:
             ],
             generationConfig: {
               temperature: 0.6,
-              maxOutputTokens: 2000,
-              response_mime_type: "application/json"
+              maxOutputTokens: 2000
             }
           })
         }
@@ -111,11 +108,11 @@ Chỉ trả về JSON như sau:
 
       if (!response.ok) {
         return res.status(response.status).json({
-          error: data.error?.message || "Lỗi từ Gemini API"
+          error: data.error?.message || "Lỗi từ Gemini"
         });
       }
 
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (!text) {
         return res.status(500).json({
@@ -123,10 +120,28 @@ Chỉ trả về JSON như sau:
         });
       }
 
-      try {
-        const parsed = JSON.parse(text);
+      // ===============================
+      // 🔥 AUTO EXTRACT JSON
+      // ===============================
 
-        // kiểm tra an toàn
+      text = text.trim();
+
+      // nếu AI lỡ thêm ```json
+      text = text.replace(/```json/g, "").replace(/```/g, "");
+
+      // tìm JSON block đầu tiên
+      const match = text.match(/\{[\s\S]*\}/);
+
+      if (!match) {
+        return res.status(500).json({
+          error: "Không tìm thấy JSON hợp lệ",
+          raw: text
+        });
+      }
+
+      try {
+        const parsed = JSON.parse(match[0]);
+
         if (!parsed.questions || !Array.isArray(parsed.questions)) {
           throw new Error("Sai cấu trúc JSON");
         }
@@ -135,7 +150,7 @@ Chỉ trả về JSON như sau:
 
       } catch (err) {
         return res.status(500).json({
-          error: "AI trả sai format JSON",
+          error: "AI trả sai JSON",
           raw: text
         });
       }
