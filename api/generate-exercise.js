@@ -5,12 +5,11 @@ export default async function handler(req, res) {
   }
 
   try {
+    const { topic, grade, count = 10, difficulty = "Trung bình", message } = req.body;
 
-    const { topic, grade, message } = req.body;
-
-    // =========================
-    // 🔵 CHAT AI
-    // =========================
+    // ==============================
+    // 🔵 CHAT AI (TỐI ƯU TỐC ĐỘ)
+    // ==============================
     if (message && message.trim() !== "") {
 
       const response = await fetch(
@@ -24,7 +23,11 @@ export default async function handler(req, res) {
                 role: "user",
                 parts: [{ text: message.trim() }]
               }
-            ]
+            ],
+            generationConfig: {
+              temperature: 0.6,
+              maxOutputTokens: 400
+            }
           })
         }
       );
@@ -44,16 +47,84 @@ export default async function handler(req, res) {
       });
     }
 
-    // =========================
-    // 🟣 TẠO ĐỀ THI
-    // =========================
+    // ==============================
+    // 🟣 TẠO BÀI TẬP PRO
+    // ==============================
     if (topic && grade) {
-      // giữ nguyên phần tạo đề thi của bạn ở đây
-      return res.status(200).json({ questions: [] });
+
+      const prompt = `
+Tạo ${count} câu trắc nghiệm tiếng Anh.
+Chủ đề: ${topic}
+Trình độ: ${grade}
+Độ khó: ${difficulty}
+
+YÊU CẦU:
+- Mỗi câu có 4 đáp án A, B, C, D
+- Chỉ 1 đáp án đúng
+- Trả về JSON thuần, không giải thích thêm
+
+Format chính xác như sau:
+
+{
+  "questions": [
+    {
+      "question": "Câu hỏi...",
+      "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+      "correct": "A"
+    }
+  ]
+}
+`;
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: prompt }]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 1500
+            }
+          })
+        }
+      );
+
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!text) {
+        return res.status(500).json({ error: "AI không trả dữ liệu" });
+      }
+
+      // ==============================
+      // 🛠 AUTO FIX JSON
+      // ==============================
+
+      let cleanText = text.trim();
+
+      // bỏ ```json nếu có
+      cleanText = cleanText.replace(/```json/g, "").replace(/```/g, "");
+
+      try {
+        const json = JSON.parse(cleanText);
+        return res.status(200).json(json);
+      } catch (err) {
+        return res.status(500).json({
+          error: "AI trả sai format JSON",
+          raw: cleanText
+        });
+      }
     }
 
     return res.status(400).json({
-      error: "Thiếu dữ liệu: cần message hoặc topic + grade"
+      error: "Thiếu dữ liệu"
     });
 
   } catch (error) {
