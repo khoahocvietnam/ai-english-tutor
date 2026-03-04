@@ -1268,18 +1268,34 @@
         let currentExercise = null;
 
         async function generateExercise() {
-            const topic = document.getElementById('exerciseTopic').value;
-            const count = document.getElementById('questionCount').value;
-            const difficulty = document.getElementById('difficulty').value;
+    const topic = document.getElementById('exerciseTopic').value;
+    const count = document.getElementById('questionCount').value;
+    const difficulty = document.getElementById('difficulty').value;
+    const resultDiv = document.getElementById('exerciseResult');
+
+    resultDiv.innerHTML = '<div style="text-align: center;"><div class="loading"></div> Đang tạo bài tập...</div>';
+
+    const result = await callAPI('/api/generate-exercise', { 
+        topic,
+        grade: userData.grade,
+        count,
+        difficulty
+    });
+
+    if(result.error) {
+        resultDiv.innerHTML = `<p style="color: red;">Lỗi: ${result.error}</p>`;
+    } else {
+        displayExercise(result, topic);
+    }
+}
             const resultDiv = document.getElementById('exerciseResult');
             
             resultDiv.innerHTML = '<div style="text-align: center;"><div class="loading"></div> Đang tạo bài tập...</div>';
             
-            const result = await callAPI('/api/generate-exercise', { 
-                topic, 
-                count, 
-                difficulty 
-            });
+const result = await callAPI('/api/generate-exercise', { 
+    topic, 
+    grade: userData.grade   // 🔥 THÊM DÒNG NÀY
+});
             
             if(result.error) {
                 resultDiv.innerHTML = `<p style="color: red;">Lỗi: ${result.error}</p>`;
